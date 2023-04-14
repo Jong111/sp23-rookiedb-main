@@ -19,11 +19,11 @@ import java.util.*;
  * inner node is serialized and persisted on a single page; see toBytes and
  * fromBytes for details on how an inner node is serialized. For example, here
  * is an illustration of an order 2 inner node:
- *
- *     +----+----+----+----+
- *     | 10 | 20 | 30 |    |
- *     +----+----+----+----+
- *    /     |    |     \
+ * <p>
+ * +----+----+----+----+
+ * | 10 | 20 | 30 |    |
+ * +----+----+----+----+
+ * /     |    |     \
  */
 class InnerNode extends BPlusNode {
     // Metadata about the B+ tree that this node belongs to.
@@ -46,13 +46,14 @@ class InnerNode extends BPlusNode {
     private List<Long> children;
 
     // Constructors ////////////////////////////////////////////////////////////
+
     /**
      * Construct a brand new inner node.
      */
     InnerNode(BPlusTreeMetadata metadata, BufferManager bufferManager, List<DataBox> keys,
               List<Long> children, LockContext treeContext) {
         this(metadata, bufferManager, bufferManager.fetchNewPage(treeContext, metadata.getPartNum()),
-             keys, children, treeContext);
+                keys, children, treeContext);
     }
 
     /**
@@ -81,14 +82,44 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
-        return null;
+        int index = 0;
+        if (keys.size() == 1) {
+            if (key.compareTo(keys.get(0)) < 0) {
+                index = 0;
+            } else {
+                index = 1;
+            }
+        } else {
+            int l = 0;
+            int r = keys.size() - 1;
+            int mid = 0;
+            while (l <= r) {
+                mid = (l + r) / 2;
+                if (key.compareTo(keys.get(mid)) >= 0) {
+                    l = mid;
+                } else {
+                    r = mid;
+                }
+                if ((l + r) / 2 == mid) {
+                    if (key.compareTo(keys.get(r)) >= 0) {
+                        index = r + 1;
+                    }
+                    else {
+                        index = r;
+                    }
+                    break;
+                }
+            }
+        }
+        long pageNum = children.get(index);
+        return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        // return null;
     }
 
     // See BPlusNode.getLeftmostLeaf.
     @Override
     public LeafNode getLeftmostLeaf() {
-        assert(children.size() > 0);
+        assert (children.size() > 0);
         // TODO(proj2): implement
 
         return null;
@@ -105,7 +136,7 @@ class InnerNode extends BPlusNode {
     // See BPlusNode.bulkLoad.
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
-            float fillFactor) {
+                                                  float fillFactor) {
         // TODO(proj2): implement
 
         return Optional.empty();
@@ -154,6 +185,7 @@ class InnerNode extends BPlusNode {
     List<Long> getChildren() {
         return children;
     }
+
     /**
      * Returns the largest number d such that the serialization of an InnerNode
      * with 2d keys will fit on a single page.
@@ -189,25 +221,25 @@ class InnerNode extends BPlusNode {
      * Given a list ys sorted in ascending order, numLessThanEqual(x, ys) returns
      * the number of elements in ys that are less than or equal to x. For
      * example,
-     *
-     *   numLessThanEqual(0, Arrays.asList(1, 2, 3, 4, 5)) == 0
-     *   numLessThanEqual(1, Arrays.asList(1, 2, 3, 4, 5)) == 1
-     *   numLessThanEqual(2, Arrays.asList(1, 2, 3, 4, 5)) == 2
-     *   numLessThanEqual(3, Arrays.asList(1, 2, 3, 4, 5)) == 3
-     *   numLessThanEqual(4, Arrays.asList(1, 2, 3, 4, 5)) == 4
-     *   numLessThanEqual(5, Arrays.asList(1, 2, 3, 4, 5)) == 5
-     *   numLessThanEqual(6, Arrays.asList(1, 2, 3, 4, 5)) == 5
-     *
+     * <p>
+     * numLessThanEqual(0, Arrays.asList(1, 2, 3, 4, 5)) == 0
+     * numLessThanEqual(1, Arrays.asList(1, 2, 3, 4, 5)) == 1
+     * numLessThanEqual(2, Arrays.asList(1, 2, 3, 4, 5)) == 2
+     * numLessThanEqual(3, Arrays.asList(1, 2, 3, 4, 5)) == 3
+     * numLessThanEqual(4, Arrays.asList(1, 2, 3, 4, 5)) == 4
+     * numLessThanEqual(5, Arrays.asList(1, 2, 3, 4, 5)) == 5
+     * numLessThanEqual(6, Arrays.asList(1, 2, 3, 4, 5)) == 5
+     * <p>
      * This helper function is useful when we're navigating down a B+ tree and
      * need to decide which child to visit. For example, imagine an index node
      * with the following 4 keys and 5 children pointers:
-     *
-     *     +---+---+---+---+
-     *     | a | b | c | d |
-     *     +---+---+---+---+
-     *    /    |   |   |    \
-     *   0     1   2   3     4
-     *
+     * <p>
+     * +---+---+---+---+
+     * | a | b | c | d |
+     * +---+---+---+---+
+     * /    |   |   |    \
+     * 0     1   2   3     4
+     * <p>
      * If we're searching the tree for value c, then we need to visit child 3.
      * Not coincidentally, there are also 3 values less than or equal to c (i.e.
      * a, b, c).
@@ -260,11 +292,11 @@ class InnerNode extends BPlusNode {
     /**
      * An inner node on page 0 with a single key k and two children on page 1 and
      * 2 is turned into the following DOT fragment:
-     *
-     *   node0[label = "<f0>|k|<f1>"];
-     *   ... // children
-     *   "node0":f0 -> "node1";
-     *   "node0":f1 -> "node2";
+     * <p>
+     * node0[label = "<f0>|k|<f1>"];
+     * ... // children
+     * "node0":f0 -> "node1";
+     * "node0":f1 -> "node2";
      */
     @Override
     public String toDot() {
@@ -286,7 +318,7 @@ class InnerNode extends BPlusNode {
             long childPageNum = child.getPage().getPageNum();
             lines.add(child.toDot());
             lines.add(String.format("  \"node%d\":f%d -> \"node%d\";",
-                                    pageNum, i, childPageNum));
+                    pageNum, i, childPageNum));
         }
 
         return String.join("\n", lines);
@@ -345,7 +377,7 @@ class InnerNode extends BPlusNode {
         Buffer buf = page.getBuffer();
 
         byte nodeType = buf.get();
-        assert(nodeType == (byte) 0);
+        assert (nodeType == (byte) 0);
 
         List<DataBox> keys = new ArrayList<>();
         List<Long> children = new ArrayList<>();
@@ -370,8 +402,8 @@ class InnerNode extends BPlusNode {
         }
         InnerNode n = (InnerNode) o;
         return page.getPageNum() == n.page.getPageNum() &&
-               keys.equals(n.keys) &&
-               children.equals(n.children);
+                keys.equals(n.keys) &&
+                children.equals(n.children);
     }
 
     @Override

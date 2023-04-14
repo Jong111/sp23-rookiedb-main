@@ -39,7 +39,7 @@ public class TestInnerNode {
     // 1 second max per method tested.
     @Rule
     public TestRule globalTimeout = new DisableOnDebug(Timeout.millis((long) (
-                1000 * TimeoutScaling.factor)));
+            1000 * TimeoutScaling.factor)));
 
     // inner, leaf0, leaf1, and leaf2 collectively form the following B+ tree:
     //
@@ -180,7 +180,7 @@ public class TestInnerNode {
 
     private void setBPlusTreeMetadata(Type keySchema, int order) {
         this.metadata = new BPlusTreeMetadata("test", "col", keySchema, order,
-                                              0, DiskSpaceManager.INVALID_PAGE_NUM, -1);
+                0, DiskSpaceManager.INVALID_PAGE_NUM, -1);
     }
 
     // See comment above.
