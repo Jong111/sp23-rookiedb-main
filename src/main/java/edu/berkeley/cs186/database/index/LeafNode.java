@@ -148,8 +148,9 @@ class LeafNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
-        return null;
+        long pageNum = page.getPageNum();
+        return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        // return null;
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -390,7 +391,13 @@ class LeafNode extends BPlusNode {
         byte nodeType = buf.get();
         assert (nodeType == (byte) 1);
 
-        Optional<Long> rightSibling = Optional.of(buf.getLong());
+        Optional<Long> rightSibling;
+        long valueOfRightSibling = buf.getLong();
+        if (valueOfRightSibling == -1) {
+            rightSibling = Optional.empty();
+        } else {
+            rightSibling = Optional.of(valueOfRightSibling);
+        }
         List<DataBox> keys = new ArrayList<>();
         List<RecordId> rids = new ArrayList<>();
         int n = buf.getInt();
