@@ -39,7 +39,7 @@ public class TestLeafNode {
     // 1 second max per method tested.
     @Rule
     public TestRule globalTimeout = new DisableOnDebug(Timeout.millis((long) (
-                1000 * TimeoutScaling.factor)));
+            1000 * TimeoutScaling.factor)));
 
     private static DataBox d0 = new IntDataBox(0);
     private static DataBox d1 = new IntDataBox(1);
@@ -71,7 +71,7 @@ public class TestLeafNode {
     // Helpers /////////////////////////////////////////////////////////////////
     private void setBPlusTreeMetadata(Type keySchema, int order) {
         this.metadata = new BPlusTreeMetadata("test", "col", keySchema, order,
-                                              0, DiskSpaceManager.INVALID_PAGE_NUM, -1);
+                0, DiskSpaceManager.INVALID_PAGE_NUM, -1);
     }
 
     private LeafNode getEmptyLeaf(Optional<Long> rightSibling) {
@@ -163,7 +163,6 @@ public class TestLeafNode {
         for (int i = 0; i < 2 * d; ++i) {
             leaf.put(new IntDataBox(i), new RecordId(i, (short) i));
         }
-
         // Then read the leaf from disk.
         long pageNum = leaf.getPage().getPageNum();
         LeafNode fromDisk = LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);

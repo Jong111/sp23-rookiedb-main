@@ -166,8 +166,68 @@ class LeafNode extends BPlusNode {
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
+        if (keys.contains(key)) {
+            throw new BPlusTreeException("test");
+        }
+        int d = metadata.getOrder();
+        if (keys.size() < 2 * d) {
+            int keyIndex = 0;
+            int recordIndex = 0;
+            for (int i = 0; i < keys.size(); i++) {
+                if (key.compareTo(keys.get(i)) > 0) {
+                    keyIndex++;
+                }
+            }
+            assert (keyIndex <= keys.size());
+            keys.add(keyIndex, key);
+            for (int i = 0; i < rids.size(); i++) {
+                if (rid.compareTo(rids.get(i)) > 0) {
+                    recordIndex++;
+                }
+            }
+            assert (recordIndex <= rids.size());
+            rids.add(recordIndex, rid);
+            sync();
+            return Optional.empty();
+        } else {
+            int keyIndex = 0;
+            int recordIndex = 0;
+            for (int i = 0; i < keys.size(); i++) {
+                if (key.compareTo(keys.get(i)) > 0) {
+                    keyIndex++;
+                }
+            }
+            assert (keyIndex <= keys.size());
+            keys.add(keyIndex, key);
+            for (int i = 0; i < rids.size(); i++) {
+                if (rid.compareTo(rids.get(i)) > 0) {
+                    recordIndex++;
+                }
+            }
+            assert (recordIndex <= rids.size());
+            rids.add(recordIndex, rid);
 
-        return Optional.empty();
+            List<DataBox> tmpList1 = new ArrayList<>(keys);
+            List<DataBox> tmpList2 = tmpList1.subList(0, d);
+            // keys = tmpList2;
+            keys.clear();
+            keys.addAll(tmpList2);
+            List<DataBox> newKeys = tmpList1.subList(d, 2 * d + 1);
+            DataBox spiltKey = newKeys.get(0);
+
+            List<RecordId> tmpList3 = new ArrayList<>(rids);
+            List<RecordId> tmpList4 = tmpList3.subList(0, d);
+            // rids = tmpList4;
+            rids.clear();
+            rids.addAll(tmpList4);
+            List<RecordId> newRecords = tmpList3.subList(d, 2 * d + 1);
+
+            LeafNode newLeaf = new LeafNode(metadata, bufferManager, newKeys, newRecords, this.rightSibling, treeContext);
+            this.rightSibling = Optional.of(newLeaf.getPage().getPageNum());
+            sync();
+            return Optional.of(new Pair<DataBox, Long>(spiltKey, newLeaf.getPage().getPageNum()));
+        }
+        // return Optional.empty();
     }
 
     // See BPlusNode.bulkLoad.
