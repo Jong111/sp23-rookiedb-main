@@ -103,8 +103,7 @@ class InnerNode extends BPlusNode {
                 if ((l + r) / 2 == mid) {
                     if (key.compareTo(keys.get(r)) >= 0) {
                         index = r + 1;
-                    }
-                    else {
+                    } else {
                         index = r;
                     }
                     break;
@@ -112,7 +111,22 @@ class InnerNode extends BPlusNode {
             }
         }
         long pageNum = children.get(index);
-        return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        BPlusNode child = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        Page p = bufferManager.fetchPage(treeContext, pageNum);
+        try {
+            Buffer buf = p.getBuffer();
+            byte b = buf.get();
+            // this child is an inner node
+            if (b == 0) {
+                return child.get(key);
+            }
+            // this node is a leaf node
+            else {
+                return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+            }
+        } finally {
+            p.unpin();
+        }
         // return null;
     }
 
@@ -121,8 +135,24 @@ class InnerNode extends BPlusNode {
     public LeafNode getLeftmostLeaf() {
         assert (children.size() > 0);
         // TODO(proj2): implement
-
-        return null;
+        long pageNum = children.get(0);
+        BPlusNode child = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        Page p = bufferManager.fetchPage(treeContext, pageNum);
+        try {
+            Buffer buf = p.getBuffer();
+            byte b = buf.get();
+            // this child is an inner node
+            if (b == 0) {
+                return child.getLeftmostLeaf();
+            }
+            // this node is a leaf node
+            else {
+                return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+            }
+        } finally {
+            p.unpin();
+        }
+        // return null;
     }
 
     // See BPlusNode.put.

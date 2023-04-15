@@ -157,8 +157,9 @@ class LeafNode extends BPlusNode {
     @Override
     public LeafNode getLeftmostLeaf() {
         // TODO(proj2): implement
-
-        return null;
+        long pageNum = page.getPageNum();
+        return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        // return null;
     }
 
     // See BPlusNode.put.
