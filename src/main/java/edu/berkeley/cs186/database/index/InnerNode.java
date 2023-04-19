@@ -145,7 +145,7 @@ class InnerNode extends BPlusNode {
             if (b == 0) {
                 return child.getLeftmostLeaf();
             }
-            // this node is a leaf node
+            // this child is a leaf node
             else {
                 return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
             }
@@ -159,8 +159,85 @@ class InnerNode extends BPlusNode {
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
+        if (get(key).getKeys().contains(key)) {
+            throw new BPlusTreeException("test");
+        }
+        int index = 0;
+        if (keys.size() == 1) {
+            if (key.compareTo(keys.get(0)) < 0) {
+                index = 0;
+            } else {
+                index = 1;
+            }
+        } else {
+            int l = 0;
+            int r = keys.size() - 1;
+            int mid = 0;
+            while (l <= r) {
+                mid = (l + r) / 2;
+                if (key.compareTo(keys.get(mid)) >= 0) {
+                    l = mid;
+                } else {
+                    r = mid;
+                }
+                if ((l + r) / 2 == mid) {
+                    if (key.compareTo(keys.get(r)) >= 0) {
+                        index = r + 1;
+                    } else {
+                        index = r;
+                    }
+                    break;
+                }
+            }
+        }
+        long pageNum = children.get(index);
+        BPlusNode child = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+        Optional<Pair<DataBox, Long>> pair = child.put(key, rid);
+        if (!pair.isPresent()) {
+            return Optional.empty();
+        } else {
+            DataBox spiltKey = pair.get().getFirst();
+            int d = metadata.getOrder();
+            if (keys.size() < 2 * d) {
+                int keyIndex = 0;
+                for (int i = 0; i < keys.size(); i++) {
+                    if (spiltKey.compareTo(keys.get(i)) > 0) {
+                        keyIndex++;
+                    }
+                }
+                assert (keyIndex <= keys.size());
+                keys.add(keyIndex, spiltKey);
+                children.add(keyIndex + 1, pair.get().getSecond());
+                sync();
+                return Optional.empty();
+            } else {
+                int keyIndex = 0;
+                for (int i = 0; i < keys.size(); i++) {
+                    if (spiltKey.compareTo(keys.get(i)) > 0) {
+                        keyIndex++;
+                    }
+                }
+                assert (keyIndex <= keys.size());
+                keys.add(keyIndex, spiltKey);
+                children.add(keyIndex + 1, pair.get().getSecond());
 
-        return Optional.empty();
+                List<DataBox> tmpList1 = new ArrayList<>(keys);
+                List<DataBox> tmpList2 = tmpList1.subList(0, d);
+                DataBox newSpiltKey = tmpList1.get(d);
+                List<DataBox> newKeys = tmpList1.subList(d + 1, keys.size());
+                // keys = tmpList2;
+                keys.clear();
+                keys.addAll(tmpList2);
+                List<Long> tmpList3 = new ArrayList<>(children);
+                List<Long> newChildren = tmpList3.subList(d + 1, children.size());
+                children = tmpList3.subList(0, d + 1);
+
+                InnerNode newInner = new InnerNode(metadata, bufferManager, newKeys, newChildren, treeContext);
+                sync();
+                return Optional.of(new Pair<DataBox, Long>(newSpiltKey, newInner.getPage().getPageNum()));
+            }
+        }
+        // return Optional.empty();
     }
 
     // See BPlusNode.bulkLoad.
