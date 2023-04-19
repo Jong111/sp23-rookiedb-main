@@ -208,8 +208,9 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): Return a BPlusTreeIterator.
-
-        return Collections.emptyIterator();
+        BPlusTreeIterator iter = new BPlusTreeIterator(root, -1);
+        return iter;
+        // return Collections.emptyIterator();
     }
 
     /**
@@ -241,8 +242,10 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): Return a BPlusTreeIterator.
-
-        return Collections.emptyIterator();
+        LeafNode leaf = root.get(key);
+        int index = InnerNode.numLessThan(key, leaf.getKeys());
+        return new BPlusTreeIterator(leaf, index - 1);
+        // return Collections.emptyIterator();
     }
 
     /**
@@ -447,19 +450,44 @@ public class BPlusTree {
     // Iterator ////////////////////////////////////////////////////////////////
     private class BPlusTreeIterator implements Iterator<RecordId> {
         // TODO(proj2): Add whatever fields and constructors you want here.
+        private int index;
+        private LeafNode node;
+
+        public BPlusTreeIterator(BPlusNode node, int index) {
+            this.index = index;
+            this.node = node.getLeftmostLeaf();
+        }
 
         @Override
         public boolean hasNext() {
             // TODO(proj2): implement
-
-            return false;
+            if (this.index == this.node.getRids().size() - 1) {
+                Optional<LeafNode> rightSibling = this.node.getRightSibling();
+                if (rightSibling.isPresent()) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+            // return false;
         }
 
         @Override
         public RecordId next() {
             // TODO(proj2): implement
-
-            throw new NoSuchElementException();
+            if (hasNext()) {
+                if (this.index == this.node.getRids().size() - 1) {
+                    this.node = this.node.getRightSibling().get();
+                    this.index = 0;
+                } else {
+                    this.index++;
+                }
+                return this.node.getRids().get(index);
+            } else {
+                throw new NoSuchElementException();
+            }
         }
     }
 }

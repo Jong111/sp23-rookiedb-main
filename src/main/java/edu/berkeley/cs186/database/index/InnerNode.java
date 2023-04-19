@@ -120,7 +120,7 @@ class InnerNode extends BPlusNode {
             if (b == 0) {
                 return child.get(key);
             }
-            // this node is a leaf node
+            // this child is a leaf node
             else {
                 return LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
             }
