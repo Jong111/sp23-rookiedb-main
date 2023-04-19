@@ -321,6 +321,7 @@ class LeafNode extends BPlusNode {
         return rids;
     }
 
+
     /**
      * Returns the largest number d such that the serialization of a LeafNode
      * with 2d entries will fit on a single page.

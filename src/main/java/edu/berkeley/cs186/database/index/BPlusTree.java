@@ -1,6 +1,7 @@
 package edu.berkeley.cs186.database.index;
 
 import edu.berkeley.cs186.database.TransactionContext;
+import edu.berkeley.cs186.database.common.Buffer;
 import edu.berkeley.cs186.database.common.Pair;
 import edu.berkeley.cs186.database.concurrency.LockContext;
 import edu.berkeley.cs186.database.concurrency.LockType;
@@ -9,6 +10,7 @@ import edu.berkeley.cs186.database.databox.DataBox;
 import edu.berkeley.cs186.database.databox.Type;
 import edu.berkeley.cs186.database.io.DiskSpaceManager;
 import edu.berkeley.cs186.database.memory.BufferManager;
+import edu.berkeley.cs186.database.memory.Page;
 import edu.berkeley.cs186.database.table.RecordId;
 
 import java.io.FileWriter;
@@ -261,8 +263,24 @@ public class BPlusTree {
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
-
-        return;
+        if (root.get(key).getKeys().contains(key)) {
+            throw new BPlusTreeException("test");
+        }
+        Optional<Pair<DataBox, Long>> pair = root.put(key, rid);
+        if (!pair.isPresent()) {
+            return;
+        } else {
+            DataBox spiltKey = pair.get().getFirst();
+            long pageNum = root.getPage().getPageNum();
+            List<DataBox> newKeys = new ArrayList<>();
+            List<Long> newChildren = new ArrayList<>();
+            newKeys.add(spiltKey);
+            newChildren.add(root.getPage().getPageNum());
+            newChildren.add(pair.get().getSecond());
+            this.updateRoot(new InnerNode(this.metadata, bufferManager, newKeys, newChildren, lockContext));
+            return;
+        }
+        // return;
     }
 
     /**
