@@ -271,7 +271,6 @@ public class BPlusTree {
             return;
         } else {
             DataBox spiltKey = pair.get().getFirst();
-            long pageNum = root.getPage().getPageNum();
             List<DataBox> newKeys = new ArrayList<>();
             List<Long> newChildren = new ArrayList<>();
             newKeys.add(spiltKey);
@@ -331,7 +330,7 @@ public class BPlusTree {
         LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
 
         // TODO(proj2): implement
-
+        root.remove(key);
         return;
     }
 
