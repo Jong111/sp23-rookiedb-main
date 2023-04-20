@@ -228,7 +228,7 @@ class LeafNode extends BPlusNode {
         int d = metadata.getOrder();
         int maxSize = (int) Math.ceil(fillFactor * 2 * d);
         int keyNums = keys.size();
-        while (keyNums <= maxSize) {
+        while (keyNums < maxSize) {
             if (!data.hasNext()) {
                 break;
             }
@@ -257,18 +257,18 @@ class LeafNode extends BPlusNode {
 
             List<DataBox> tmpList1 = new ArrayList<>(keys);
             List<DataBox> tmpList2 = tmpList1.subList(0, maxSize);
+            List<DataBox> newKeys = tmpList1.subList(maxSize, keys.size());
             // keys = tmpList2;
             keys.clear();
             keys.addAll(tmpList2);
-            List<DataBox> newKeys = tmpList1.subList(maxSize, keys.size());
             DataBox spiltKey = newKeys.get(0);
 
             List<RecordId> tmpList3 = new ArrayList<>(rids);
             List<RecordId> tmpList4 = tmpList3.subList(0, maxSize);
+            List<RecordId> newRecords = tmpList3.subList(maxSize, rids.size());
             // rids = tmpList4;
             rids.clear();
             rids.addAll(tmpList4);
-            List<RecordId> newRecords = tmpList3.subList(maxSize, rids.size());
 
             LeafNode newLeaf = new LeafNode(metadata, bufferManager, newKeys, newRecords, this.rightSibling, treeContext);
             this.rightSibling = Optional.of(newLeaf.getPage().getPageNum());

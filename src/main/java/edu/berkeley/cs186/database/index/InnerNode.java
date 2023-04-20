@@ -245,29 +245,62 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
                                                   float fillFactor) {
         // TODO(proj2): implement
-//        assert (fillFactor > 0 && fillFactor <= 1);
-//        int d = metadata.getOrder();
-//        // int maxSize = (int) Math.ceil(fillFactor * 2 * d);
-//        int keyNums = keys.size();
-//        while (keyNums <= 2 * d) {
-//            if (!data.hasNext()) {
-//                break;
-//            }
-////            Pair<DataBox, RecordId> pair = data.next();
-////            DataBox key = pair.getFirst();
-////            RecordId rid = pair.getSecond();
-//
-////            int keyIndex = InnerNode.numLessThanEqual(key, keys);
-////            assert (keyIndex <= keys.size());
-////            keys.add(keyIndex, key);
-////            rids.add(keyIndex, rid);
-//            long pageNum = children.get(children.size() - 1);
-//            BPlusNode rightMost = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
-//            Optional<Pair<DataBox, Long>> pairFromChild = rightMost.bulkLoad(data, fillFactor);
-//            DataBox keyFromChild = pairFromChild.get().getFirst();
-//            keyNums++;
-//        }
-        return Optional.empty();
+        assert (fillFactor > 0 && fillFactor <= 1);
+        int d = metadata.getOrder();
+        int keyNums = keys.size();
+        while (keyNums < 2 * d) {
+            if (!data.hasNext()) {
+                break;
+            }
+            long pageNum = children.get(children.size() - 1);
+            BPlusNode rightMost = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+            Optional<Pair<DataBox, Long>> pairFromChild = rightMost.bulkLoad(data, fillFactor);
+            if (pairFromChild.isPresent()) {
+                DataBox spiltKeyFromChild = pairFromChild.get().getFirst();
+                Long newChild = pairFromChild.get().getSecond();
+                int keyIndex = InnerNode.numLessThanEqual(spiltKeyFromChild, keys);
+                assert (keyIndex <= keys.size());
+                keys.add(keyIndex, spiltKeyFromChild);
+                children.add(keyIndex + 1, newChild);
+                keyNums++;
+            }
+        }
+        if (!data.hasNext()) {
+            sync();
+            return Optional.empty();
+        } else {
+            while (data.hasNext()) {
+                long pageNum = children.get(children.size() - 1);
+                BPlusNode rightMost = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+                Optional<Pair<DataBox, Long>> pairFromChild = rightMost.bulkLoad(data, fillFactor);
+                if (pairFromChild.isPresent()) {
+                    DataBox spiltKeyFromChild = pairFromChild.get().getFirst();
+                    Long newChild = pairFromChild.get().getSecond();
+                    int keyIndex = InnerNode.numLessThanEqual(spiltKeyFromChild, keys);
+                    assert (keyIndex <= keys.size());
+                    keys.add(keyIndex, spiltKeyFromChild);
+                    children.add(keyIndex + 1, newChild);
+
+                    List<DataBox> tmpList1 = new ArrayList<>(keys);
+                    List<DataBox> tmpList2 = tmpList1.subList(0, d);
+                    DataBox newSpiltKey = tmpList1.get(d);
+                    List<DataBox> newKeys = tmpList1.subList(d + 1, keys.size());
+                    // keys = tmpList2;
+                    keys.clear();
+                    keys.addAll(tmpList2);
+                    List<Long> tmpList3 = new ArrayList<>(children);
+                    List<Long> newChildren = tmpList3.subList(d + 1, children.size());
+                    children = tmpList3.subList(0, d + 1);
+
+                    InnerNode newInner = new InnerNode(metadata, bufferManager, newKeys, newChildren, treeContext);
+                    sync();
+                    return Optional.of(new Pair<DataBox, Long>(newSpiltKey, newInner.getPage().getPageNum()));
+                }
+            }
+            sync();
+            return Optional.empty();
+        }
+        // return Optional.empty();
     }
 
     // See BPlusNode.remove.
