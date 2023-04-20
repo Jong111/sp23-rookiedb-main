@@ -9,6 +9,7 @@ import edu.berkeley.cs186.database.memory.BufferManager;
 import edu.berkeley.cs186.database.memory.Page;
 import edu.berkeley.cs186.database.table.RecordId;
 
+import javax.xml.crypto.Data;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -172,7 +173,7 @@ class LeafNode extends BPlusNode {
         int d = metadata.getOrder();
         if (keys.size() < 2 * d) {
             int keyIndex = 0;
-            int recordIndex = 0;
+            // int recordIndex = 0;
             for (int i = 0; i < keys.size(); i++) {
                 if (key.compareTo(keys.get(i)) > 0) {
                     keyIndex++;
@@ -180,18 +181,12 @@ class LeafNode extends BPlusNode {
             }
             assert (keyIndex <= keys.size());
             keys.add(keyIndex, key);
-            for (int i = 0; i < rids.size(); i++) {
-                if (rid.compareTo(rids.get(i)) > 0) {
-                    recordIndex++;
-                }
-            }
-            assert (recordIndex <= rids.size());
-            rids.add(recordIndex, rid);
+            rids.add(keyIndex, rid);
             sync();
             return Optional.empty();
         } else {
             int keyIndex = 0;
-            int recordIndex = 0;
+            // int recordIndex = 0;
             for (int i = 0; i < keys.size(); i++) {
                 if (key.compareTo(keys.get(i)) > 0) {
                     keyIndex++;
@@ -199,13 +194,7 @@ class LeafNode extends BPlusNode {
             }
             assert (keyIndex <= keys.size());
             keys.add(keyIndex, key);
-            for (int i = 0; i < rids.size(); i++) {
-                if (rid.compareTo(rids.get(i)) > 0) {
-                    recordIndex++;
-                }
-            }
-            assert (recordIndex <= rids.size());
-            rids.add(recordIndex, rid);
+            rids.add(keyIndex, rid);
 
             List<DataBox> tmpList1 = new ArrayList<>(keys);
             List<DataBox> tmpList2 = tmpList1.subList(0, d);
@@ -235,8 +224,58 @@ class LeafNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
                                                   float fillFactor) {
         // TODO(proj2): implement
+        assert (fillFactor > 0 && fillFactor <= 1);
+        int d = metadata.getOrder();
+        int maxSize = (int) Math.ceil(fillFactor * 2 * d);
+        int keyNums = keys.size();
+        while (keyNums <= maxSize) {
+            if (!data.hasNext()) {
+                break;
+            }
+            Pair<DataBox, RecordId> pair = data.next();
+            DataBox key = pair.getFirst();
+            RecordId rid = pair.getSecond();
 
-        return Optional.empty();
+            int keyIndex = InnerNode.numLessThanEqual(key, keys);
+            assert (keyIndex <= keys.size());
+            keys.add(keyIndex, key);
+            rids.add(keyIndex, rid);
+            keyNums++;
+        }
+        if (!data.hasNext()) {
+            sync();
+            return Optional.empty();
+        } else {
+            Pair<DataBox, RecordId> pair = data.next();
+            DataBox key = pair.getFirst();
+            RecordId rid = pair.getSecond();
+
+            int keyIndex = InnerNode.numLessThanEqual(key, keys);
+            assert (keyIndex <= keys.size());
+            keys.add(keyIndex, key);
+            rids.add(keyIndex, rid);
+
+            List<DataBox> tmpList1 = new ArrayList<>(keys);
+            List<DataBox> tmpList2 = tmpList1.subList(0, maxSize);
+            // keys = tmpList2;
+            keys.clear();
+            keys.addAll(tmpList2);
+            List<DataBox> newKeys = tmpList1.subList(maxSize, keys.size());
+            DataBox spiltKey = newKeys.get(0);
+
+            List<RecordId> tmpList3 = new ArrayList<>(rids);
+            List<RecordId> tmpList4 = tmpList3.subList(0, maxSize);
+            // rids = tmpList4;
+            rids.clear();
+            rids.addAll(tmpList4);
+            List<RecordId> newRecords = tmpList3.subList(maxSize, rids.size());
+
+            LeafNode newLeaf = new LeafNode(metadata, bufferManager, newKeys, newRecords, this.rightSibling, treeContext);
+            this.rightSibling = Optional.of(newLeaf.getPage().getPageNum());
+            sync();
+            return Optional.of(new Pair<DataBox, Long>(spiltKey, newLeaf.getPage().getPageNum()));
+        }
+        // return Optional.empty();
     }
 
     // See BPlusNode.remove.

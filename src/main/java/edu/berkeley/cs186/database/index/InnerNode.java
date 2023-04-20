@@ -245,7 +245,28 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
                                                   float fillFactor) {
         // TODO(proj2): implement
-
+//        assert (fillFactor > 0 && fillFactor <= 1);
+//        int d = metadata.getOrder();
+//        // int maxSize = (int) Math.ceil(fillFactor * 2 * d);
+//        int keyNums = keys.size();
+//        while (keyNums <= 2 * d) {
+//            if (!data.hasNext()) {
+//                break;
+//            }
+////            Pair<DataBox, RecordId> pair = data.next();
+////            DataBox key = pair.getFirst();
+////            RecordId rid = pair.getSecond();
+//
+////            int keyIndex = InnerNode.numLessThanEqual(key, keys);
+////            assert (keyIndex <= keys.size());
+////            keys.add(keyIndex, key);
+////            rids.add(keyIndex, rid);
+//            long pageNum = children.get(children.size() - 1);
+//            BPlusNode rightMost = BPlusNode.fromBytes(metadata, bufferManager, treeContext, pageNum);
+//            Optional<Pair<DataBox, Long>> pairFromChild = rightMost.bulkLoad(data, fillFactor);
+//            DataBox keyFromChild = pairFromChild.get().getFirst();
+//            keyNums++;
+//        }
         return Optional.empty();
     }
 
