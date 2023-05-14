@@ -116,7 +116,27 @@ public class SortOperator extends QueryOperator {
     public Run mergeSortedRuns(List<Run> runs) {
         assert (runs.size() <= this.numBuffers - 1);
         // TODO(proj3_part1): implement
-        return null;
+        // return null;
+        int n = runs.size();
+        List<Record> recordList = new ArrayList<>();
+        List<BacktrackingIterator<Record>> iters = new ArrayList<>();
+        PriorityQueue<Pair<Record, Integer>> bufferQueue = new PriorityQueue<>(new RecordPairComparator());
+        for (int i = 0; i < n; i++) {
+            BacktrackingIterator<Record> iter = runs.get(i).iterator();
+            iters.add(iter);
+        }
+        for (int i = 0; i < n; i++) {
+            assert (iters.get(i).hasNext());
+            bufferQueue.offer(new Pair<Record, Integer>(iters.get(i).next(), i));
+        }
+        while (!bufferQueue.isEmpty()) {
+            Pair<Record, Integer> targetPair = bufferQueue.poll();
+            recordList.add(targetPair.getFirst());
+            if (iters.get(targetPair.getSecond()).hasNext()) {
+                bufferQueue.offer(new Pair<Record, Integer>(iters.get(targetPair.getSecond()).next(), targetPair.getSecond()));
+            }
+        }
+        return makeRun(recordList);
     }
 
     /**
