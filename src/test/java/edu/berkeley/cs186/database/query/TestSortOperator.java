@@ -141,7 +141,7 @@ public class TestSortOperator {
                 count++;
             }
             assertFalse("too many records", iterator.hasNext());
-            assertEquals("too few records", 8  * 3, count);
+            assertEquals("too few records", 8 * 3, count);
         }
     }
 

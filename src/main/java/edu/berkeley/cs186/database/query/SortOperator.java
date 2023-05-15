@@ -4,8 +4,10 @@ import edu.berkeley.cs186.database.TransactionContext;
 import edu.berkeley.cs186.database.common.Pair;
 import edu.berkeley.cs186.database.common.iterator.BacktrackingIterator;
 import edu.berkeley.cs186.database.query.disk.Run;
+import edu.berkeley.cs186.database.table.PageDirectory;
 import edu.berkeley.cs186.database.table.Record;
 import edu.berkeley.cs186.database.table.Schema;
+import edu.berkeley.cs186.database.table.Table;
 import edu.berkeley.cs186.database.table.stats.TableStats;
 
 import java.util.*;
@@ -185,7 +187,7 @@ public class SortOperator extends QueryOperator {
                     r = N;
                 }
             }
-            if(isPerfectMultiple == 0) {
+            if (isPerfectMultiple == 0) {
                 List<Run> currentRuns = runs.subList(l, r);
                 Run currentMergedRun = mergeSortedRuns(currentRuns);
                 res.add(currentMergedRun);
@@ -211,7 +213,28 @@ public class SortOperator extends QueryOperator {
         Iterator<Record> sourceIterator = getSource().iterator();
 
         // TODO(proj3_part1): implement
-        return makeRun(); // TODO(proj3_part1): replace this!
+        // return makeRun(); // TODO(proj3_part1): replace this!
+        List<Run> runs = new ArrayList<>();
+        while (sourceIterator.hasNext()) {
+            BacktrackingIterator<Record> iter = QueryOperator.getBlockIterator(sourceIterator, getSource().getSchema(), this.numBuffers);
+            Run run = sortRun(iter);
+            runs.add(run);
+        }
+        int n = runs.size();
+        if (n == 1) {
+            return runs.get(0);
+        }
+        if (n > this.numBuffers - 1) {
+            List<Run> updatedRuns = mergePass(runs);
+            n = updatedRuns.size();
+            while (n > this.numBuffers - 1) {
+                updatedRuns = mergePass(updatedRuns);
+                n = updatedRuns.size();
+            }
+            return mergeSortedRuns(updatedRuns);
+        } else {
+            return mergeSortedRuns(runs);
+        }
     }
 
     /**
