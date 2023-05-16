@@ -110,7 +110,7 @@ public class TestSortMergeJoin {
     @Category(PublicTests.class)
     public void testSimpleSortMergeJoin() {
         d.setWorkMem(5); // B=5
-        try(Transaction transaction = d.beginTransaction()) {
+        try (Transaction transaction = d.beginTransaction()) {
             setSourceOperators(
                     TestUtils.createSourceWithAllTypes(100),
                     TestUtils.createSourceWithAllTypes(100),
@@ -138,15 +138,25 @@ public class TestSortMergeJoin {
 
             assertFalse("too many records", outputIterator.hasNext());
             outputIterator.hasNext();
+//            int num = 0;
+//            while (outputIterator.hasNext()) {
+//                // System.out.println(outputIterator .hasNext());
+//                boolean x = leftSourceOperator.getSource().iterator().hasNext();
+//                boolean y = rightSourceOperator.getSource().iterator().hasNext();
+//                num++;
+//                int ttt = 0;
+//                outputIterator.next();
+//            }
+//            System.out.println("num: " + num);
             assertEquals("too few records", 100 * 100, numRecords);
         }
     }
 
     @Test
     @Category(PublicTests.class)
-    public void testSortMergeJoinUnsortedInputs()  {
+    public void testSortMergeJoinUnsortedInputs() {
         d.setWorkMem(3); // B=3
-        try(Transaction transaction = d.beginTransaction()) {
+        try (Transaction transaction = d.beginTransaction()) {
             transaction.createTable(TestUtils.createSchemaWithAllTypes(), "leftTable");
             transaction.createTable(TestUtils.createSchemaWithAllTypes(), "rightTable");
             pinPage(1, 1);
@@ -197,6 +207,9 @@ public class TestSortMergeJoin {
 
             int numRecords = 0;
             Record expectedRecord;
+
+            // temporary
+            // System.out.println("sorted:" + outputIterator.hasNext());
 
             while (outputIterator.hasNext() && numRecords < 400 * 400) {
                 if (numRecords < (400 * 400 / 4)) {
