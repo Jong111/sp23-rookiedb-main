@@ -138,16 +138,6 @@ public class TestSortMergeJoin {
 
             assertFalse("too many records", outputIterator.hasNext());
             outputIterator.hasNext();
-//            int num = 0;
-//            while (outputIterator.hasNext()) {
-//                // System.out.println(outputIterator .hasNext());
-//                boolean x = leftSourceOperator.getSource().iterator().hasNext();
-//                boolean y = rightSourceOperator.getSource().iterator().hasNext();
-//                num++;
-//                int ttt = 0;
-//                outputIterator.next();
-//            }
-//            System.out.println("num: " + num);
             assertEquals("too few records", 100 * 100, numRecords);
         }
     }
@@ -207,9 +197,6 @@ public class TestSortMergeJoin {
 
             int numRecords = 0;
             Record expectedRecord;
-
-            // temporary
-            // System.out.println("sorted:" + outputIterator.hasNext());
 
             while (outputIterator.hasNext() && numRecords < 400 * 400) {
                 if (numRecords < (400 * 400 / 4)) {

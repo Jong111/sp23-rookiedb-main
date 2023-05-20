@@ -40,7 +40,7 @@ public class BNLJOperator extends JoinOperator {
         int numLeftPages = getLeftSource().estimateStats().getNumPages();
         int numRightPages = getRightSource().estimateIOCost();
         return ((int) Math.ceil((double) numLeftPages / (double) usableBuffers)) * numRightPages +
-               getLeftSource().estimateIOCost();
+                getLeftSource().estimateIOCost();
     }
 
     /**
@@ -48,7 +48,7 @@ public class BNLJOperator extends JoinOperator {
      * Look over the implementation in SNLJOperator if you want to get a feel
      * for the fetchNextRecord() logic.
      */
-    private class BNLJIterator implements Iterator<Record>{
+    private class BNLJIterator implements Iterator<Record> {
         // Iterator over all the records of the left source
         private Iterator<Record> leftSourceIterator;
         // Iterator over all the records of the right source
@@ -70,6 +70,10 @@ public class BNLJOperator extends JoinOperator {
             this.rightSourceIterator = getRightSource().backtrackingIterator();
             this.rightSourceIterator.markNext();
             this.fetchNextRightPage();
+            rightPageIterator.markNext();
+
+//            this.leftBlockIterator = null;
+//            this.rightPageIterator = null;
 
             this.nextRecord = null;
         }
@@ -79,43 +83,79 @@ public class BNLJOperator extends JoinOperator {
          * leftBlockIterator should be set to a backtracking iterator over up to
          * B-2 pages of records from the left source, and leftRecord should be
          * set to the first record in this block.
-         *
+         * <p>
          * If there are no more records in the left source, this method should
          * do nothing.
-         *
+         * <p>
          * You may find QueryOperator#getBlockIterator useful here.
          * Make sure you pass in the correct schema to this method.
          */
         private void fetchNextLeftBlock() {
             // TODO(proj3_part1): implement
+            leftBlockIterator = getBlockIterator(leftSourceIterator, getLeftSource().getSchema(), numBuffers - 2);
+            if (leftBlockIterator.hasNext()) {
+                leftRecord = leftBlockIterator.next();
+            }
+            leftBlockIterator.markPrev();
         }
 
         /**
          * Fetch the next page of records from the right source.
          * rightPageIterator should be set to a backtracking iterator over up to
          * one page of records from the right source.
-         *
+         * <p>
          * If there are no more records in the right source, this method should
          * do nothing.
-         *
+         * <p>
          * You may find QueryOperator#getBlockIterator useful here.
          * Make sure you pass in the correct schema to this method.
          */
         private void fetchNextRightPage() {
             // TODO(proj3_part1): implement
+            rightPageIterator = getBlockIterator(rightSourceIterator, getRightSource().getSchema(), 1);
         }
 
         /**
          * Returns the next record that should be yielded from this join,
          * or null if there are no more records to join.
-         *
+         * <p>
          * You may find JoinOperator#compare useful here. (You can call compare
          * function directly from this file, since BNLJOperator is a subclass
          * of JoinOperator).
          */
         private Record fetchNextRecord() {
             // TODO(proj3_part1): implement
-            return null;
+            // return null;
+            if (leftRecord == null) {
+                // The left source was empty, nothing to fetch
+                return null;
+            }
+            while (true) {
+                if (this.rightPageIterator.hasNext()) {
+                    // there's a next right record in current page, join it if there's a match
+                    Record rightRecord = rightPageIterator.next();
+                    if (compare(leftRecord, rightRecord) == 0) {
+                        return leftRecord.concat(rightRecord);
+                    }
+                } else if (leftBlockIterator.hasNext()) {
+                    // there's no more right records in the current page but there's still left
+                    // records int the current block. Advance left and reset right
+                    this.leftRecord = leftBlockIterator.next();
+                    this.rightPageIterator.reset();
+                } else if (rightSourceIterator.hasNext()) {
+                    fetchNextRightPage();
+                    rightPageIterator.markNext();
+                    leftBlockIterator.reset();
+                    leftRecord = leftBlockIterator.next();
+                } else if (leftSourceIterator.hasNext()) {
+                    fetchNextLeftBlock();
+                    rightSourceIterator.reset();
+                    fetchNextRightPage();
+                    rightPageIterator.markNext();
+                } else {
+                    return null;
+                }
+            }
         }
 
         /**
